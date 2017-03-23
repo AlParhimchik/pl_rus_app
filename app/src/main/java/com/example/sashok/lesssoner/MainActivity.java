@@ -22,6 +22,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.animation.Animation;
+import android.view.animation.AnimationSet;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -49,6 +50,14 @@ public class MainActivity extends AppCompatActivity  {
         getSupportActionBar().setHomeButtonEnabled(false);
         getSupportActionBar().setDisplayHomeAsUpEnabled(false);
         add_button=(FloatingActionButton)findViewById(fab);
+        add_button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                AddWordDialogFragment dialogFragment=new AddWordDialogFragment(MainActivity.this);
+                dialogFragment.getWindow().getAttributes().windowAnimations=R.style.RegistrationDialogAnimation;
+                dialogFragment.show();
+            }
+        });
         mPager = (ViewPager) findViewById(R.id.view_pager_card_view);
         String [] data=new String[] {"Hello","blaa","bee","qqq"};
         mPagerAdapter = new ScreenSlidePagerAdapter(getSupportFragmentManager(),data);
@@ -58,46 +67,24 @@ public class MainActivity extends AppCompatActivity  {
 
         final ImageView success=(ImageView)findViewById(R.id.succcess_btn);
         final ImageView error=(ImageView)findViewById(R.id.error_btn);
-
-        final Animation animation = AnimationUtils.loadAnimation(this, R.anim.rotate_full);
-        animation.setAnimationListener(new Animation.AnimationListener() {
-            @Override
-            public void onAnimationStart(Animation animation) {
-
-            }
-
-            @Override
-            public void onAnimationEnd(Animation animation) {
-
-            }
-
-            @Override
-            public void onAnimationRepeat(Animation animation) {
-
-            }
-        });
-        success.setAnimation(animation);
-        error.setAnimation(animation);
+        final Animation disapear = AnimationUtils.loadAnimation(this, R.anim.disapear_in);
         error.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 int currPos=mPager.getCurrentItem();
                 mPager.setCurrentItem(currPos+1);
-                error.startAnimation(animation);
+                 error.startAnimation(disapear);
             }
         });
+
         success.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 int currPos=mPager.getCurrentItem();
                 mPager.setCurrentItem(currPos+1);
-                success.startAnimation(animation);
+                success.startAnimation(disapear);
             }
         });
-
-
-
-
     }
 
     @Override

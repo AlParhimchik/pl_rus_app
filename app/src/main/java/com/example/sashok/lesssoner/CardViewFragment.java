@@ -30,11 +30,19 @@ public class CardViewFragment extends android.support.v4.app.Fragment  implement
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+
+        if (savedInstanceState==null) {
+        Log.i("TAG","NULL");
+        }
+        else {
+            if (str=="" || str==null){
+                str=savedInstanceState.getString("text");
+            }
+        }
         ViewGroup rootView = (ViewGroup) inflater.inflate(
                 R.layout.card_view, container, false);
         final TextView textView=(TextView) rootView.findViewById(R.id.info_text);
         textView.setText(str);
-
         animation1 = AnimationUtils.loadAnimation(getActivity(), R.anim.card_flip_left_in);
         animation1.setAnimationListener(this);
         animation2 = AnimationUtils.loadAnimation(getActivity(), R.anim.card_flip_left_out);
@@ -91,6 +99,18 @@ public class CardViewFragment extends android.support.v4.app.Fragment  implement
     }
     public CardViewFragment(){
 
+
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putCharSequence("text",this.str);
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
     }
 
     @Override
