@@ -15,6 +15,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
+import android.view.animation.AnimationSet;
 import android.view.animation.AnimationUtils;
 import android.widget.TextView;
 
@@ -23,26 +24,33 @@ import android.widget.TextView;
  */
 
 public class CardViewFragment extends android.support.v4.app.Fragment  implements Animation.AnimationListener {
-    String str;
+    Word word;
     CardView cardView;
     private Animation animation1;
     private Animation animation2;
+    private TextView textView;
+    private Language currentLanguage;
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
-        if (savedInstanceState==null) {
-        Log.i("TAG","NULL");
-        }
-        else {
-            if (str=="" || str==null){
-                str=savedInstanceState.getString("text");
+        if (savedInstanceState!=null) {
+            if (word.pl_word=="" || word==null){
+                word=(Word)savedInstanceState.getSerializable("word");
             }
         }
         ViewGroup rootView = (ViewGroup) inflater.inflate(
                 R.layout.card_view, container, false);
-        final TextView textView=(TextView) rootView.findViewById(R.id.info_text);
-        textView.setText(str);
+        textView=(TextView) rootView.findViewById(R.id.info_text);
+        if (currentLanguage==Language.Russian) {
+            if (word.translation.size()!=0)
+                textView.setText(word.translation.get(0));
+            else textView.setText("нету перевода");
+        }
+        else{
+            textView.setText(word.pl_word);
+
+        }
         animation1 = AnimationUtils.loadAnimation(getActivity(), R.anim.card_flip_left_in);
         animation1.setAnimationListener(this);
         animation2 = AnimationUtils.loadAnimation(getActivity(), R.anim.card_flip_left_out);
@@ -55,48 +63,18 @@ public class CardViewFragment extends android.support.v4.app.Fragment  implement
                 cardView.setAnimation(animation1);
                 cardView.startAnimation(animation1);
             }
-//                Animation animation = AnimationUtils.loadAnimation(getActivity(), R.anim.card_flip_left_in);
-//                animation.setAnimationListener(new Animation.AnimationListener() {
-//                    @Override
-//                    public void onAnimationStart(Animation animation) {
-//                    }
 //
-//                    @Override
-//                    public void onAnimationRepeat(Animation animation) {
-//                    }
-//
-//                    @Override
-//                    public void onAnimationEnd(Animation animation) {
-//                        Animation animation_out = AnimationUtils.loadAnimation(getActivity(), R.anim.card_flip_left_out);
-//                        animation_out.setAnimationListener(new Animation.AnimationListener() {
-//                            @Override
-//                            public void onAnimationStart(Animation animation) {
-//                            }
-//
-//                            @Override
-//                            public void onAnimationRepeat(Animation animation) {
-//                            }
-//
-//                            @Override
-//                            public void onAnimationEnd(Animation animation) {
-//                                textView.setText("loxi vse");
-//                            }
-//                        });
-//
-//                        cardView.startAnimation(animation_out);
-//                    }
-//                });
-//
-//                cardView.startAnimation(animation);
-//            }
        });
 
         return rootView;
     }
-    public CardViewFragment(String string){
-        str=string;
+
+    public CardViewFragment(Word word , Language lang){
+        this.word=word;
+        currentLanguage=lang;
 
     }
+
     public CardViewFragment(){
 
 
@@ -105,7 +83,7 @@ public class CardViewFragment extends android.support.v4.app.Fragment  implement
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        outState.putCharSequence("text",this.str);
+        outState.putSerializable("word",word);
     }
 
     @Override
@@ -118,6 +96,19 @@ public class CardViewFragment extends android.support.v4.app.Fragment  implement
 
     }
 
+    public void hello(Language lang)
+    {
+        if (lang==Language.Russian){
+            if (word.translation.size()!=0)
+            textView.setText(word.translation.get(0));
+            else textView.setText("нету перевода");
+        }
+        else{
+            textView.setText(word.pl_word);
+        }
+        currentLanguage=lang;
+    }
+
     @Override
     public void onAnimationEnd(Animation animation) {
     if (animation==animation1){
@@ -125,12 +116,25 @@ public class CardViewFragment extends android.support.v4.app.Fragment  implement
         cardView.clearAnimation();
         cardView.setAnimation(animation2);
         cardView.startAnimation(animation2);
-    }
+        if (currentLanguage==Language.Russian) {
+            currentLanguage = Language.Polish;
+            textView.setText(word.pl_word);
+        }
+        else {
+            currentLanguage = Language.Russian;
+            if (word.translation.size()!=0)
+                textView.setText(word.translation.get(0));
+            else textView.setText("нету перевода");
 
+        }
+
+    }
     }
 
     @Override
     public void onAnimationRepeat(Animation animation) {
 
     }
+
+
 }

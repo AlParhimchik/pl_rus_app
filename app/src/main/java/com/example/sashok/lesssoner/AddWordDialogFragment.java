@@ -2,10 +2,12 @@ package com.example.sashok.lesssoner;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Handler;
 import android.support.v4.content.ContextCompat;
 import android.text.InputType;
@@ -27,6 +29,7 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TableLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 /**
  * Created by sashok on 23.3.17.
@@ -37,6 +40,14 @@ public class AddWordDialogFragment extends AlertDialog implements View.OnClickLi
     EditText pol_word;
     LinearLayout root_layout;
     Context ctx;
+    SQLiteDatabase chatDBlocal;
+    public final String DB_NAME="words.db";
+    public final String CREATE_PL_WORDS_TABLE="CREATE TABLE IF NOT EXISTS "+ Word.TABLE_NAME_PL_WORD +
+            " (_id integer primary key  AUTOINCREMENT unique,"+ Word.TABLE_COLUMN_NAME_PL_WORD+" text not null,"+ Word.TABLE_COLUMN_PL_FAVOURITE+" INTEGER DEFAULT 0,"+ Word.TABLE_COLUMN_DEGREE+" INTEGER DEFAULT 0 )";
+    public final String CREATE_RUS_WORDS_TABLE="CREATE TABLE IF NOT EXISTS "+ Word.TABLE_NAME_RUS_WORD +
+            " (_id integer primary key AUTOINCREMENT unique ,"+ Word.TABLE_COLUMN_NAME_RUS_WORD+" text not null,"+Word.TABLE_COLUMN_PL_ID+" Integer not null,"+
+            " CONSTRAINT receive_key FOREIGN key("+Word.TABLE_COLUMN_PL_ID+") REFERENCES "+Word.TABLE_NAME_PL_WORD+"("+Word.TABLE_COLUMN_NAME_ID+") ON DELETE SET NULL)";
+
     protected AddWordDialogFragment(final Context context)
     {
         super(context);
@@ -123,27 +134,52 @@ public class AddWordDialogFragment extends AlertDialog implements View.OnClickLi
     }
     @Override
     public void onClick(View view) {
-        for (int i=0;i<root_layout.getChildCount();i++){
-            RelativeLayout layout= (RelativeLayout) root_layout.getChildAt(i);
-            View text= layout.getChildAt(0);
-            if (text instanceof  EditText)
-            {
-                EditText t=(EditText)text;
-                Log.i("TAG",t.getText().toString());
-            }
+        if (root_layout==null || root_layout.getChildCount()==1){
+            Toast.makeText(ctx,"Добавьте перевод",Toast.LENGTH_LONG).show();
 
         }
-        //addToDb(word);
-        //logic here
-        dismiss();
+        else {
+            Word new_word=new Word();
+            for (int i = 0; i < root_layout.getChildCount(); i++) {
+                RelativeLayout layout = (RelativeLayout) root_layout.getChildAt(i);
+                View text = layout.getChildAt(0);
+                if (text instanceof EditText) {
+                    EditText t = (EditText) text;
+                    if (i==0){
+                        new_word.pl_word=t.getText().toString();
+                    }
+                    else{
+                        new_word.translation.add(t.getText().toString());
+                    }
 
-    }
+                }
+            }
+            if (new_word.pl_word!=""){
+                chatDBlocal =ctx.openOrCreateDatabase(DB_NAME,
+                        Context.MODE_PRIVATE, null);
+                chatDBlocal.execSQL(CREATE_PL_WORDS_TABLE);
+                chatDBlocal.execSQL(CREATE_RUS_WORDS_TABLE);
+                ContentValues values=new ContentValues();
+                values.put(Word.TABLE_COLUMN_DEGREE,new_word.degree);
+                values.put(Word.TABLE_COLUMN_PL_FAVOURITE,new_word.favourite);
+                values.put(Word.TABLE_COLUMN_NAME_PL_WORD,new_word.pl_word);
+                chatDBlocal.insert(Word.TABLE_NAME_PL_WORD,null,values);
+                Cursor cursor = chatDBlocal.rawQuery("SELECT _id from "+Word.TABLE_NAME_PL_WORD +" ORDER BY _id DESC LIMIT 1;", null);
+                int id=-1;
+                if (cursor.moveToFirst()){
+                    id=cursor.getInt(cursor.getColumnIndex(Word.TABLE_COLUMN_NAME_ID));
+                    for (String str:new_word.translation) {
+                        values=new ContentValues();
+                        values.put(Word.TABLE_COLUMN_NAME_RUS_WORD,str);
+                        values.put(Word.TABLE_COLUMN_PL_ID,id);
+                        chatDBlocal.insert(Word.TABLE_NAME_RUS_WORD,null,values);
+                    }
+                }
 
-    public static float convertDpToPixel(float dp, Context context){
-        Resources resources = context.getResources();
-        DisplayMetrics metrics = resources.getDisplayMetrics();
-        float px = dp * ((float)metrics.densityDpi / DisplayMetrics.DENSITY_DEFAULT);
-        return px;
+                dismiss();
+            }
+            else Toast.makeText(ctx,"Добавьте перевод",Toast.LENGTH_LONG).show();
+        }
     }
 
     @Override
@@ -153,6 +189,7 @@ public class AddWordDialogFragment extends AlertDialog implements View.OnClickLi
             hideKeyboard(view);
         }
     }
+
     public void hideKeyboard(View view) {
         InputMethodManager inputMethodManager =(InputMethodManager)ctx.getSystemService(Activity.INPUT_METHOD_SERVICE);
         inputMethodManager.hideSoftInputFromWindow(view.getWindowToken(), 0);
