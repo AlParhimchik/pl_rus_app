@@ -42,15 +42,7 @@ public class CardViewFragment extends android.support.v4.app.Fragment  implement
         ViewGroup rootView = (ViewGroup) inflater.inflate(
                 R.layout.card_view, container, false);
         textView=(TextView) rootView.findViewById(R.id.info_text);
-        if (currentLanguage==Language.Russian) {
-            if (word.translation.size()!=0)
-                textView.setText(word.translation.get(0));
-            else textView.setText("нету перевода");
-        }
-        else{
-            textView.setText(word.pl_word);
-
-        }
+        setText();
         animation1 = AnimationUtils.loadAnimation(getActivity(), R.anim.card_flip_left_in);
         animation1.setAnimationListener(this);
         animation2 = AnimationUtils.loadAnimation(getActivity(), R.anim.card_flip_left_out);
@@ -67,6 +59,26 @@ public class CardViewFragment extends android.support.v4.app.Fragment  implement
        });
 
         return rootView;
+    }
+
+    private void setText() {
+
+        if (currentLanguage==Language.Russian) {
+            if (word.translation.size()!=0) {
+                String result="";
+                for (int i=0;i<word.translation.size();i++){
+                    result+=word.translation.get(i);
+                    if (i!=word.translation.size()-1) result+=",\n";
+                }
+                textView.setText(result);
+            }
+            else textView.setText("нету перевода");
+        }
+        else{
+            textView.setText(word.pl_word);
+
+        }
+
     }
 
     public CardViewFragment(Word word , Language lang){
@@ -96,38 +108,24 @@ public class CardViewFragment extends android.support.v4.app.Fragment  implement
 
     }
 
-    public void hello(Language lang)
-    {
-        if (lang==Language.Russian){
-            if (word.translation.size()!=0)
-            textView.setText(word.translation.get(0));
-            else textView.setText("нету перевода");
-        }
-        else{
-            textView.setText(word.pl_word);
-        }
+    public void hello(Language lang){
         currentLanguage=lang;
+        setText();
     }
 
     @Override
     public void onAnimationEnd(Animation animation) {
-    if (animation==animation1){
+    if (animation==animation1) {
 
         cardView.clearAnimation();
         cardView.setAnimation(animation2);
         cardView.startAnimation(animation2);
-        if (currentLanguage==Language.Russian) {
+        if (currentLanguage == Language.Russian) {
             currentLanguage = Language.Polish;
-            textView.setText(word.pl_word);
-        }
-        else {
+        } else {
             currentLanguage = Language.Russian;
-            if (word.translation.size()!=0)
-                textView.setText(word.translation.get(0));
-            else textView.setText("нету перевода");
-
         }
-
+        setText();
     }
     }
 
