@@ -31,6 +31,7 @@
 
 
         </android.support.v7.widget.Toolbar>
+
     <android.support.design.widget.CoordinatorLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
@@ -72,17 +73,15 @@
             android:id="@+id/view_pager_layout"
             android:layout_width="match_parent"
             android:visibility="invisible"
-            android:layout_marginLeft="10dp"
-            android:layout_marginRight="10dp"
             android:layout_marginTop="5dp"
-            android:background="@drawable/transparent_layout"
-            android:layout_height="515dp">
-            <android.support.v7.widget.RecyclerView
+            android:background="#B9F6CA"
+            android:layout_height="match_parent">
+            <ListView
                 android:layout_width="match_parent"
-                android:id="@+id/recycler_view_list"
-                android:layout_height="match_parent">
+                android:id="@+id/list_view_search"
+                android:layout_height="wrap_content">
 
-            </android.support.v7.widget.RecyclerView>
+            </ListView>
         </RelativeLayout>
         <android.support.design.widget.FloatingActionButton
             android:id="@+id/fab"

@@ -22,7 +22,7 @@ public class Word  implements Serializable{
     public static  String TABLE_COLUMN_DEGREE="degree";
     public static  String TABLE_COLUMN_PL_FAVOURITE="favourite";
     public  String pl_word;
-    public int degree;
+    public int degree,id;
     public List<String> translation;
     public Word(){
         translation=new ArrayList<>();

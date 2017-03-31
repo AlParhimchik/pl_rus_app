@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">Lesssoner</string>
     <string name="search_title">Поиск</string>
-    <string name="search_hint">Текст на русском</string>
+    <string name="search_hint">Текст на польском</string>
     <string name="add_word_title">Новое слово</string>
     <string name="add_word_pol">Слово на польском</string>
     <string name="add_word_rus">Перевод</string>

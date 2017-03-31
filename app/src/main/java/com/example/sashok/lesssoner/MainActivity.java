@@ -35,6 +35,7 @@ import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ListAdapter;
+import android.widget.ListView;
 import android.widget.RelativeLayout;
 
 import java.io.Serializable;
@@ -43,6 +44,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 import static com.example.sashok.lesssoner.R.id.fab;
@@ -58,9 +60,11 @@ public class MainActivity extends AppCompatActivity  {
     ScreenSlidePagerAdapter mPagerAdapter;
     FloatingActionButton add_button;
     HashMap<Integer,CardViewFragment> mPageReferenceMap;
-    List<Word> words;
+    public List<Word> words;
     SQLiteDatabase chatDBlocal;
     Language currentLanguage;
+    SearchListAdapter list_adapter;
+    final Random random = new Random();
     public final String DB_NAME="words.db";
     public final String CREATE_PL_WORDS_TABLE="CREATE TABLE IF NOT EXISTS "+ Word.TABLE_NAME_PL_WORD +
             " (_id integer primary key  AUTOINCREMENT unique,"+ Word.TABLE_COLUMN_NAME_PL_WORD+" text not null,"+ Word.TABLE_COLUMN_PL_FAVOURITE+" INTEGER DEFAULT 0,"+ Word.TABLE_COLUMN_DEGREE+" INTEGER DEFAULT 0 )";
@@ -72,7 +76,8 @@ public class MainActivity extends AppCompatActivity  {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         StoreWords store=new StoreWords();
-        store.execute();
+        if (words==null)  store.execute(-1);
+        else store.execute(words.get(words.size()-1).id);
         currentLanguage=Language.Polish;
         mPageReferenceMap=new HashMap<>();
         if (savedInstanceState!=null) {
@@ -91,7 +96,14 @@ public class MainActivity extends AppCompatActivity  {
         add_button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                AddWordDialogFragment dialogFragment=new AddWordDialogFragment(MainActivity.this);
+                DataChanged listener=new DataChanged() {
+                    @Override
+                    public void onDataChanged() {
+                        StoreWords op=new StoreWords();
+                        op.execute(mPagerAdapter.words.get(mPagerAdapter.words.size()-1).id);
+                    }
+                };
+                AddWordDialogFragment dialogFragment=new AddWordDialogFragment(MainActivity.this,listener);
                 dialogFragment.getWindow().getAttributes().windowAnimations=R.style.RegistrationDialogAnimation;
                 dialogFragment.show();
             }
@@ -120,6 +132,17 @@ public class MainActivity extends AppCompatActivity  {
                 success.startAnimation(disapear);
             }
         });
+
+
+
+        LoopRecyclerViewPager mRecyclerView = (LoopRecyclerViewPager) findViewById(R.id.viewpager);
+        LinearLayoutManager layout = new LinearLayoutManager(this,LinearLayoutManager.HORIZONTAL,false);
+        mRecyclerView.setLayoutManager(layout);
+
+//set adapter
+//You just need to impelement ViewPageAdapter by yourself like a normal RecyclerView.Adpater.
+        mRecyclerView.setAdapter(new RVAdapter(MainActivity.this));
+        ((RVAdapter)mRecyclerView.getAdapter()).changeLang(Language.Polish);
     }
 
     @Override
@@ -132,7 +155,7 @@ public class MainActivity extends AppCompatActivity  {
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
+    public boolean onCreateOptionsMenu(final Menu menu) {
         getMenuInflater().inflate(R.menu.menu_toolbar, menu);
 
         MenuItem searchItem = menu.findItem(R.id.search);
@@ -144,6 +167,8 @@ public class MainActivity extends AppCompatActivity  {
         MenuItemCompat.setOnActionExpandListener(searchItem, new MenuItemCompat.OnActionExpandListener() {
             @Override
             public boolean onMenuItemActionExpand(MenuItem item) {
+                menu.findItem(R.id.ru_pl).setVisible(false);
+                menu.findItem(R.id.favourite).setVisible(false);
                 return true;
             }
 
@@ -164,6 +189,8 @@ public class MainActivity extends AppCompatActivity  {
                     public void onAnimationEnd(Animation animation) {
                         view.setVisibility(View.INVISIBLE);
                         add_button.setVisibility(View.VISIBLE);
+                        menu.findItem(R.id.ru_pl).setVisible(true);
+                        menu.findItem(R.id.favourite).setVisible(true);
                     }
                 });
 
@@ -177,6 +204,18 @@ public class MainActivity extends AppCompatActivity  {
         }
         searchView.setSubmitButtonEnabled(true);
         searchView.setIconifiedByDefault(false);
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                list_adapter.getFilter().filter(newText);
+                return false;
+            }
+        });
         searchView.setQueryHint(getString(R.string.search_hint));
         return  true;
 
@@ -185,6 +224,7 @@ public class MainActivity extends AppCompatActivity  {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId()==R.id.search){
+
             final RelativeLayout view=(RelativeLayout)findViewById(R.id.view_pager_layout);
             Animation animation = AnimationUtils.loadAnimation(this, R.anim.slide_up);
             //use this to make it longer:  animation.setDuration(1000);
@@ -233,46 +273,25 @@ public class MainActivity extends AppCompatActivity  {
         }
         public void hello(Language lang)
         {
-
-        CardViewFragment fr=findFragment(mPager.getCurrentItem());
-            if (fr!=null){
-                fr.hello(lang);
+            for (CardViewFragment fr:mPageReferenceMap.values()) {
+                if (fr!=null){
+                    fr.hello(lang);
+                }
             }
-
-//            FragmentManager fm = getSupportFragmentManager();
-//            if (fm != null) {
-//                List<Fragment> fragments = fm.getFragments();
-//
-//                for(int i = fragments.size()-1 ; i >= 0; i--){
-//                    Fragment fragment = fragments.get(i);
-//                    if(fragment != null) {
-//                        // found the current fragment
-////                        ((CardViewFragment)fragment).hello(lang);
-//                        // if you want to check for specific fragment class
-//                        break;
-//                    }
-//                }
-            //}
-
-
-        }
-
-        public CardViewFragment findFragment(int position){
-            return mPageReferenceMap.get(position);
-
         }
 
         @Override
         public void destroyItem(ViewGroup container, int position, Object object) {
             super.destroyItem(container, position, object);
             mPageReferenceMap.remove(position);
-            Log.i("TAG","delete");
         }
 
         @Override
         public Fragment getItem(int position) {
 
+            //CardViewFragment fr=new CardViewFragment(words.get(random.nextInt(words.size())),currentLanguage);
             CardViewFragment fr=new CardViewFragment(words.get(position),currentLanguage);
+
             fr.setRetainInstance(true);
             mPageReferenceMap.put(position, fr);
             return fr;
@@ -283,20 +302,19 @@ public class MainActivity extends AppCompatActivity  {
             return words.size();
         }
 
-
-
     }
 
-    class StoreWords extends AsyncTask<Void,Void,List<Word>>{
+    class StoreWords extends AsyncTask<Integer,Void,List<Word>>{
 
         @Override
-        protected List<Word> doInBackground(Void[] params) {
+        protected List<Word> doInBackground(Integer[] params) {
             List <Word> words=new ArrayList<>();
+            int last_id=params[0];
             chatDBlocal =openOrCreateDatabase(DB_NAME,
                     Context.MODE_PRIVATE, null);
             chatDBlocal.execSQL(CREATE_PL_WORDS_TABLE);
             chatDBlocal.execSQL(CREATE_RUS_WORDS_TABLE);
-            Cursor cursor = chatDBlocal.query(Word.TABLE_NAME_PL_WORD, null, null, null , null, null, null);
+            Cursor cursor = chatDBlocal.query(Word.TABLE_NAME_PL_WORD, null, Word.TABLE_COLUMN_NAME_ID+" > ?", new String[]{String.valueOf(last_id)} , null, null, null);
             if (cursor.moveToFirst()){
                 String translation;
                 do{
@@ -306,10 +324,8 @@ public class MainActivity extends AppCompatActivity  {
                     if (bool==0) word.favourite=false;
                     else word.favourite=true;
                     word.degree=cursor.getInt(cursor.getColumnIndex(Word.TABLE_COLUMN_DEGREE));
-                    int id=cursor.getInt(cursor.getColumnIndex(word.TABLE_COLUMN_NAME_ID));
-
-
-                    Cursor cursor_word=chatDBlocal.query(Word.TABLE_NAME_RUS_WORD,null,Word.TABLE_COLUMN_PL_ID+" = ? ",new String[]{String.valueOf(id)},null,null,null );
+                    word.id=cursor.getInt(cursor.getColumnIndex(word.TABLE_COLUMN_NAME_ID));
+                    Cursor cursor_word=chatDBlocal.query(Word.TABLE_NAME_RUS_WORD,null,Word.TABLE_COLUMN_PL_ID+" = ? ",new String[]{String.valueOf(word.id)},null,null,null );
                     if (cursor_word.moveToFirst()){
                         do{
                             translation=cursor_word.getString(cursor_word.getColumnIndex(Word.TABLE_COLUMN_NAME_RUS_WORD));
@@ -326,10 +342,31 @@ public class MainActivity extends AppCompatActivity  {
         @Override
         protected void onPostExecute(List<Word> words) {
             super.onPostExecute(words);
-            mPagerAdapter = new ScreenSlidePagerAdapter(getSupportFragmentManager(),words);
-            mPager.setAdapter(mPagerAdapter);
+            if (mPagerAdapter==null) {
+                list_adapter=new SearchListAdapter(MainActivity.this,(ArrayList<Word>) words);
+                ListView searchListView = (ListView) findViewById(R.id.list_view_search);
+                searchListView.setAdapter(list_adapter);
+                searchListView.setTextFilterEnabled(false);
+                mPagerAdapter = new ScreenSlidePagerAdapter(getSupportFragmentManager(), words);
+                mPager.setAdapter(mPagerAdapter);
+                mPager.setCurrentItem(0);
+            }
+            else{
+                for (Word word:words
+                     ) {
+                    mPagerAdapter.words.add(word);
+                    Log.i("TAG","ADD");
+                    //list_adapter.friendList.add(word);
+                }
+                mPagerAdapter.notifyDataSetChanged();
+                list_adapter.notifyDataSetChanged();
+            }
 
         }
+    }
+
+    public interface DataChanged{
+        public void onDataChanged();
     }
 }
 
